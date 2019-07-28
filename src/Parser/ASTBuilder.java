@@ -1,7 +1,6 @@
 package Parser;
 
 import Parser.ASTNodes.*;
-import jdk.nashorn.internal.ir.BinaryNode;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -207,22 +206,50 @@ public class ASTBuilder {
             skipToken("LEFT_PAREN");
             node = parseExpression();
             skipToken("RIGHT_PAREN");
+        } else if (checkToken("CAST")) {
+            return parseCast();
         } else {
             throw new RuntimeException("Unexpected token " + tokenHolder.lookUp().getName());
         }
-        while (checkToken("DOT", "QUESTION", "LEFT_PAREN", "AS")) {
+        while (checkToken("DOT", "QUESTION", "LEFT_PAREN", "AS") ||
+                (checkToken("IDENTIFIER") && (tokenHolder.lookUp(1).getValue().equals("QUESTION") || tokenHolder.lookUp(1).getValue().equals("EXCLAMATION")))) {
             node = maybeCall(maybeMemberAccess(maybeCast(node)));
+
         }
         return node;
     }
+    private LambdaBodyNode parseLambdaBody() {
+        skipToken("LEFT_CURLY_PAREN");
+
+    }
+    private BodyNode parseBody() {
+        skipToken("LEFT_CURLY_PAREN");
+        Collection<Node> program = new Collection<>();
+        while (!checkToken("RIGHT_CURLY_PAREN")) {
+            program.add(parseExpression());
+            checkAndSkip("SEMICOLON");
+        }
+        return new BodyNode(program);
+    }
     private Node maybeCast(Node expression) {
         if (checkToken("AS")) {
-            return parseCast(expression);
+            return parseAsCast(expression);
         } else {
             return expression;
         }
     }
-    private CastNode parseCast(Node expression) {
+    private CastNode parseCast() {
+        skipToken("CAST");
+        CastNode castNode = new CastNode();
+        castNode.setStrict(checkToken("EXCLAMATION"));
+        skipToken("QUESTION", "EXCLAMATION");
+        castNode.setToType(parseType());
+        skipToken("LEFT_PAREN");
+        castNode.setValue(parseExpression());
+        skipToken("RIGHT_PAREN");
+        return castNode;
+    }
+    private CastNode parseAsCast(Node expression) {
         skipToken("AS");
         CastNode castNode = new CastNode();
         castNode.setStrict(checkToken("EXCLAMATION"));
@@ -261,8 +288,29 @@ public class ASTBuilder {
             return left;
         }
     }
+    private Node maybeInfix(Node expression) {
+        if (checkToken("IDENTIFIER") && (tokenHolder.lookUp(1).getValue().equals("QUESTION") || tokenHolder.lookUp(1).getValue().equals("EXCLAMATION"))) {
+            return parseInfix(expression);
+        } else {
+            return expression;
+        }
+    }
+    private CallNode parseInfix(Node expression) {
+        MemberAccessNode memberAccessNode = new MemberAccessNode(expression, skipToken("IDENTIFIER").getValue());
+        CallNode callNode = new CallNode(memberAccessNode);
+        callNode.setStrict(checkToken("EXCLAMATION"));
+        skipToken("QUESTION", "EXCLAMATION");
+        callNode.setArguments(
+                new Collection<>(
+                        new CallNode.Argument(null, parseExpression())
+                )
+        );
+        return callNode;
+    }
     private CallNode parseCall(Node function) {
         CallNode node = new CallNode(function);
+        node.setStrict(!checkToken("QUESTION"));
+        checkAndSkip("QUESTION", "EXCLAMATION");
         node.setArguments(parseArguments());
         return node;
     }

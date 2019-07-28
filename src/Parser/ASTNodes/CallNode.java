@@ -37,6 +37,7 @@ public class CallNode extends Node {
 
     private Node function;
     private Collection<Argument> arguments;
+    private boolean strict;
 
     public CallNode(Node function) {
         this.function = function;
@@ -56,5 +57,13 @@ public class CallNode extends Node {
 
     public void setArguments(Collection<Argument> arguments) {
         this.arguments = arguments;
+    }
+
+    public boolean isStrict() {
+        return strict;
+    }
+
+    public void setStrict(boolean strict) {
+        this.strict = strict;
     }
 }

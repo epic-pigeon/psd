@@ -13,6 +13,9 @@ public abstract class Node extends JSONToString {
         CALL,
         VARIABLE,
         CAST,
+        BODY,
+        LAMBDA_BODY,
+        IF,
     }
     public abstract Type getType();
     private Type type = getType();

@@ -44,6 +44,7 @@ public class Main {
             new KeywordRule("LET", "let"),
             new KeywordRule("CONST", "const"),
             new KeywordRule("AS", "as"),
+            new KeywordRule("CAST", "cast"),
 
 
 
