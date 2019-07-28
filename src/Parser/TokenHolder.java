@@ -38,7 +38,11 @@ public class TokenHolder {
     }
 
     public Token lookUp() {
-        return hasNext() ? tokens.get(position) : null;
+        return lookUp(0);
+    }
+
+    public Token lookUp(int i) {
+        return tokens.size() > position + i ? tokens.get(position + i) : null;
     }
 
     public Iterator<Token> iterator() {

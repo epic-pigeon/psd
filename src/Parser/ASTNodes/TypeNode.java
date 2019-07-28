@@ -1,10 +1,16 @@
 package Parser.ASTNodes;
 
-public class TypeNode extends Node {
+public abstract class TypeNode extends Node {
     @Override
     public Type getType() {
         return Type.TYPE;
     }
+
+    public static enum TypeType {
+        MULTIPLE, TUPLE, ARRAY, STRUCT
+    }
+
+    public abstract TypeType getTypeType();
 
     private boolean strict;
 

@@ -20,7 +20,11 @@ public class JSONToString {
             if (!Modifier.isStatic(field.getModifiers())) {
                 try {
                     field.setAccessible(true);
-                    object.put(field.getName(), field.get(this));
+                    Object result = field.get(this);
+                    if (!(result instanceof Number) && !(result instanceof Collection) && !(result instanceof JSONToString)) {
+                        result = String.valueOf(result);
+                    }
+                    object.put(field.getName(), result);
                 } catch (IllegalAccessException ex) {
                     ex.printStackTrace();
                 }
