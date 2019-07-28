@@ -72,4 +72,12 @@ public class Collection<T> extends ArrayList<T> {
         for (T element: this) if (function.apply(element)) return true;
         return false;
     }
+    public<K, V> Map<K, V> toMap() {
+        HashMap<K, V> result = new HashMap<>();
+        for (T element: this) {
+            Map.Entry<K, V> entry = (Map.Entry<K, V>) element;
+            result.put(entry.getKey(), entry.getValue());
+        }
+        return result;
+    }
 }

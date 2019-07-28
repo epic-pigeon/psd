@@ -3,6 +3,7 @@ package Parser;
 import Parser.ASTNodes.*;
 import jdk.nashorn.internal.ir.BinaryNode;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class ASTBuilder {
@@ -111,8 +112,71 @@ public class ASTBuilder {
             result.setStrict(!checkToken("QUESTION"));
             if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
             return result;
+        } else if (checkToken("LEFT_PAREN")) {
+            skipToken("LEFT_PAREN");
+            TypeNode node = parseType();
+            if (checkToken("COMMA", "RIGHT_PAREN")) {
+                Collection<TypeNode> result = new Collection<>(node);
+                if (checkToken("COMMA")) result.addAll(delimited("COMMA", "COMMA", "RIGHT_PAREN", this::parseType));
+                TupleTypeNode typeNode = new TupleTypeNode(result);
+                typeNode.setStrict(!checkToken("QUESTION"));
+                if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
+                return typeNode;
+            } else if (checkToken("BINARY_OR")) {
+                Collection<TypeNode> result = new Collection<>(node);
+                result.addAll(delimited("BINARY_OR", "BINARY_OR", "RIGHT_PAREN", this::parseType));
+                MultipleTypeNode typeNode = new MultipleTypeNode(result);
+                typeNode.setStrict(!checkToken("QUESTION"));
+                if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
+                return typeNode;
+            } else throw new RuntimeException("Unexpected token " + tokenHolder.lookUp().getName());
+        } else if (checkToken("LEFT_SQUARE_PAREN")) {
+            skipToken("LEFT_SQUARE_PAREN");
+            TypeNode typeNode = parseType();
+            if (checkToken("COLON")) {
+                skipToken("COLON");
+                TypeNode result = new DictionaryTypeNode(typeNode, parseType());
+                skipToken("RIGHT_SQUARE_PAREN");
+                result.setStrict(!checkToken("QUESTION"));
+                if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
+                return result;
+            } else if (checkToken("RIGHT_SQUARE_PAREN")) {
+                skipToken("RIGHT_SQUARE_PAREN");
+                TypeNode result = new ArrayTypeNode(typeNode);
+                result.setStrict(!checkToken("QUESTION"));
+                if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
+                return result;
+            } else throw new RuntimeException("Unexpected token " + tokenHolder.lookUp().getValue());
+        } else if (checkToken("LEFT_CURLY_PAREN")) {
+            TypeNode result = new StructTypeNode(
+                    delimited("LEFT_CURLY_PAREN", "COMMA", "RIGHT_CURLY_PAREN", this::parseStructParameter).toMap()
+            );
+            result.setStrict(!checkToken("QUESTION"));
+            if (checkToken("QUESTION", "EXCLAMATION")) tokenHolder.next();
+            return result;
         }
         throw new RuntimeException("Unrecognized type");
+    }
+    private Map.Entry<String, TypeNode> parseStructParameter() {
+        String name = skipToken("IDENTIFIER").getValue();
+        skipToken("COLON");
+        TypeNode type = parseType();
+        return new Map.Entry<String, TypeNode>() {
+            @Override
+            public String getKey() {
+                return name;
+            }
+
+            @Override
+            public TypeNode getValue() {
+                return type;
+            }
+
+            @Override
+            public TypeNode setValue(TypeNode value) {
+                return null;
+            }
+        };
     }
     private Node maybeBinary(Node expression, int precedence) {
         if (tokenHolder.lookUp() != null) {
@@ -139,13 +203,33 @@ public class ASTBuilder {
             node = parseString();
         } else if (checkToken("IDENTIFIER")) {
             node = parseVariable();
+        } else if (checkToken("LEFT_PAREN")) {
+            skipToken("LEFT_PAREN");
+            node = parseExpression();
+            skipToken("RIGHT_PAREN");
         } else {
             throw new RuntimeException("Unexpected token " + tokenHolder.lookUp().getName());
         }
-        while (checkToken("DOT", "QUESTION", "LEFT_PAREN")) {
-            node = maybeCall(maybeMemberAccess(node));
+        while (checkToken("DOT", "QUESTION", "LEFT_PAREN", "AS")) {
+            node = maybeCall(maybeMemberAccess(maybeCast(node)));
         }
         return node;
+    }
+    private Node maybeCast(Node expression) {
+        if (checkToken("AS")) {
+            return parseCast(expression);
+        } else {
+            return expression;
+        }
+    }
+    private CastNode parseCast(Node expression) {
+        skipToken("AS");
+        CastNode castNode = new CastNode();
+        castNode.setStrict(checkToken("EXCLAMATION"));
+        skipToken("QUESTION", "EXCLAMATION");
+        castNode.setValue(expression);
+        castNode.setToType(parseType());
+        return castNode;
     }
     private VariableNode parseVariable() {
         return new VariableNode(skipToken("IDENTIFIER").getValue());

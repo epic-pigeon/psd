@@ -7,10 +7,11 @@ public abstract class TypeNode extends Node {
     }
 
     public static enum TypeType {
-        MULTIPLE, TUPLE, ARRAY, STRUCT
+        MULTIPLE, TUPLE, ARRAY, STRUCT, IDENTIFIER, DICTIONARY
     }
 
     public abstract TypeType getTypeType();
+    private TypeType typeType = getTypeType();
 
     private boolean strict;
 

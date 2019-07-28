@@ -43,6 +43,7 @@ public class Main {
             new Rule("COLON", Pattern.compile(":")),
             new KeywordRule("LET", "let"),
             new KeywordRule("CONST", "const"),
+            new KeywordRule("AS", "as"),
 
 
 

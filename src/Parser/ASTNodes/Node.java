@@ -12,6 +12,7 @@ public abstract class Node extends JSONToString {
         OPERATOR,
         CALL,
         VARIABLE,
+        CAST,
     }
     public abstract Type getType();
     private Type type = getType();

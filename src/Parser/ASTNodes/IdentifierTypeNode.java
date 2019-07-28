@@ -10,4 +10,9 @@ public class IdentifierTypeNode extends TypeNode {
     public void setName(String name) {
         this.name = name;
     }
+
+    @Override
+    public TypeType getTypeType() {
+        return TypeType.IDENTIFIER;
+    }
 }

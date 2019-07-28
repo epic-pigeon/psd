@@ -4,6 +4,7 @@ import org.json.simple.JSONObject;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Map;
 
 public class JSONToString {
     public String toString() {
@@ -21,8 +22,11 @@ public class JSONToString {
                 try {
                     field.setAccessible(true);
                     Object result = field.get(this);
-                    if (!(result instanceof Number) && !(result instanceof Collection) && !(result instanceof JSONToString)) {
+                    if (!(result instanceof Number) && !(result instanceof Collection) && !(result instanceof JSONToString) && !(result instanceof Map)) {
                         result = String.valueOf(result);
+                    }
+                    if (result instanceof Map) {
+                        result = new JSONObject((Map) result);
                     }
                     object.put(field.getName(), result);
                 } catch (IllegalAccessException ex) {
